@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
 
         scanButton.setOnClickListener(v -> scanNetwork());
 
-        scanNetwork(); // scan on start
+        scanNetwork();
     }
 
     private void scanNetwork() {
@@ -52,14 +52,15 @@ public class MainActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
 
         new Thread(() -> {
-            for (int i = 1; i <= 27; i++) {
-                String host = "10.0.2." + i;
+            for (int i = 62; i <= 113; i++) {
+                String host = "172.16.80." + i;
 
                 try (Socket socket = new Socket()) {
                     socket.connect(new InetSocketAddress(host, 41007), 200);
 
                     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                     BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    out.println("Connected");
 
                     String response = in.readLine();
 

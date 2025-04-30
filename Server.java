@@ -26,6 +26,7 @@ public class LabServer {
                     System.out.println("[" + hostname + "] Received command: " + command);
 
                     switch (command) {
+                        case "Connected":
                         case "Echo":
                             out.println(hostname + " - " + osName);
                             break;
