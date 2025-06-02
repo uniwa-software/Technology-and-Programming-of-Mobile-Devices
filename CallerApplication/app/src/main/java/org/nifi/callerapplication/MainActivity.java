@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -46,39 +47,63 @@ public class MainActivity extends AppCompatActivity {
 
         scanNetwork();
     }
-
     private void scanNetwork() {
         computers.clear();
         adapter.notifyDataSetChanged();
 
         new Thread(() -> {
-            for (int i = 62; i <= 113; i++) {
-                String host = "172.16.80." + i;
-
-                try (Socket socket = new Socket()) {
-                    socket.connect(new InetSocketAddress(host, 41007), 200);
-
-                    PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    out.println("Connected");
-
-                    String response = in.readLine();
-
-                    if (response != null && response.contains(" - ")) {
-                        String[] parts = response.split(" - ");
-                        String name = parts[0];
-                        String os = parts[1];
-
-                        Computer pc = new Computer(host, name, os);
-                        runOnUiThread(() -> {
-                            computers.add(pc);
-                            adapter.notifyItemInserted(computers.size() - 1);
-                        });
-                    }
-
-                } catch (Exception ignored) {}
-            }
+            scanNetworkRange();
         }).start();
     }
 
+    private void scanNetworkRange() {
+        for (int i = 1; i <= 27; i++) {
+            String host = "10.0.2" + "." + i;
+
+            Computer offlinePC = new Computer(host, false);
+
+            runOnUiThread(() -> {
+                computers.add(offlinePC);
+                adapter.notifyItemInserted(computers.size() - 1);
+            });
+        }
+
+        for (int i = 0; i < computers.size(); i++) {
+            testConnection(computers.get(i).ip, i);
+        }
+    }
+
+    private void testConnection(String ip, int index) {
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(ip, 41007), 500);
+
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            out.println("Connected");
+
+            String response = in.readLine();
+
+            if (response != null && response.contains(" - ")) {
+                String[] parts = response.split(" - ");
+                String name = parts[0];
+                String os = parts[1];
+
+                runOnUiThread(() -> {
+                    if (index < computers.size()) {
+                        computers.set(index, new Computer(ip, name, os, true));
+                        adapter.notifyItemChanged(index);
+
+                        Toast.makeText(MainActivity.this,
+                                "Found server: " + name + " at " + ip,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+                Log.d("ServerFound", "Connected to: " + name + " (" + os + ") at " + ip);
+            }
+
+        } catch (Exception e) {
+            Log.d("NetworkScan", "No server at " + ip + ": " + e.getMessage());
+        }
+    }
 }

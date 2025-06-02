@@ -1,12 +1,11 @@
 import java.io.*;
 import java.net.*;
 
-public class LabServer {
+public class Server {
     public static void main(String[] args) {
         int port = 41007;
         String hostname;
         String osName = System.getProperty("os.name");
-
         try {
             hostname = InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException e) {
@@ -14,8 +13,13 @@ public class LabServer {
         }
 
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println("[" + hostname + "] Server listening on port " + port);
-
+            try {
+                String localIP = InetAddress.getLocalHost().getHostAddress();
+                System.out.println("Server IP: " + localIP);
+                System.out.println("[" + hostname + "] Server listening on port " + port);
+            } catch (UnknownHostException e) {
+                System.out.println("Could not get local IP: " + e.getMessage());
+            }
             while (true) {
                 try (
                         Socket socket = serverSocket.accept();
@@ -38,23 +42,17 @@ public class LabServer {
                             break;
                         case "Restore":
                             out.println(hostname + " - Restoring");
-
-                            final PrintWriter threadOut = out;
-                            final String threadHostname = hostname;
-
-                            new Thread(() -> {
-                                try {
-                                    Thread.sleep(5000); // Προσομοίωση καθυστέρησης
-                                    threadOut.println(threadHostname + " - Restored");
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }).start();
+                            try{
+                                Thread.sleep(5000);
+                            }catch(Exception e){
+                                
+                            }
+                            out.println(hostname + " - Restored");
                             break;
                         default:
                             out.println("Unknown command");
                     }
-
+                    
                 } catch (IOException e) {
                     System.out.println("[" + hostname + "] Connection error: " + e.getMessage());
                 }
