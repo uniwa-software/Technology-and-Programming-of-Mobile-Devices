@@ -45,42 +45,31 @@ public class MainActivity extends AppCompatActivity {
 
         scanButton.setOnClickListener(v -> scanNetwork());
 
+        // Initialize with predefined computers
+        computers.addAll(ComputerList.getPredefinedComputers());
+        adapter.notifyDataSetChanged();
+        
+        // Start initial scan
         scanNetwork();
     }
-    private void scanNetwork() {
-        computers.clear();
-        adapter.notifyDataSetChanged();
 
+    private void scanNetwork() {
         new Thread(() -> {
-            scanNetworkRange();
+            for (int i = 0; i < computers.size(); i++) {
+                final Computer computer = computers.get(i);
+                testConnection(computer, i);
+            }
         }).start();
     }
 
-    private void scanNetworkRange() {
-        for (int i = 1; i <= 27; i++) {
-            String host = "10.0.2" + "." + i;
-
-            Computer offlinePC = new Computer(host, false);
-
-            runOnUiThread(() -> {
-                computers.add(offlinePC);
-                adapter.notifyItemInserted(computers.size() - 1);
-            });
-        }
-
-        for (int i = 0; i < computers.size(); i++) {
-            testConnection(computers.get(i).ip, i);
-        }
-    }
-
-    private void testConnection(String ip, int index) {
+    private void testConnection(Computer computer, int index) {
         try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(ip, 41007), 500);
+            socket.connect(new InetSocketAddress(computer.ip, 41007), 500);
 
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out.println("Connected");
-
+            
+            out.println("Echo");
             String response = in.readLine();
 
             if (response != null && response.contains(" - ")) {
@@ -89,21 +78,38 @@ public class MainActivity extends AppCompatActivity {
                 String os = parts[1];
 
                 runOnUiThread(() -> {
-                    if (index < computers.size()) {
-                        computers.set(index, new Computer(ip, name, os, true));
-                        adapter.notifyItemChanged(index);
-
-                        Toast.makeText(MainActivity.this,
-                                "Found server: " + name + " at " + ip,
-                                Toast.LENGTH_SHORT).show();
-                    }
+                    computer.name = name;
+                    computer.os = os;
+                    computer.isOnline = true;
+                    adapter.notifyItemChanged(index);
                 });
 
-                Log.d("ServerFound", "Connected to: " + name + " (" + os + ") at " + ip);
+                Log.d("ServerFound", "Connected to: " + name + " (" + os + ") at " + computer.ip);
             }
 
         } catch (Exception e) {
-            Log.d("NetworkScan", "No server at " + ip + ": " + e.getMessage());
+            runOnUiThread(() -> {
+                computer.isOnline = false;
+                computer.os = "Offline";
+                adapter.notifyItemChanged(index);
+            });
+            Log.d("NetworkScan", "No server at " + computer.ip + ": " + e.getMessage());
         }
+    }
+
+    public void sendWakeOnLan(Computer computer) {
+        if (computer.macAddress.isEmpty()) {
+            Toast.makeText(this, "No MAC address available for this computer", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new Thread(() -> {
+            WolUtil.sendWakeOnLan(computer.macAddress, computer.ip);
+            runOnUiThread(() -> 
+                Toast.makeText(MainActivity.this, 
+                    "Wake-on-LAN packet sent to " + computer.networkName, 
+                    Toast.LENGTH_SHORT).show()
+            );
+        }).start();
     }
 }

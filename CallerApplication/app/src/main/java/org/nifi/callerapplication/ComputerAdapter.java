@@ -44,7 +44,7 @@ public class ComputerAdapter extends RecyclerView.Adapter<ComputerAdapter.ViewHo
         Computer pc = computers.get(position);
 
         holder.ipText.setText(pc.ip);
-        holder.infoText.setText(pc.name + " - " + pc.os);
+        holder.infoText.setText(pc.networkName + (pc.name.equals(pc.networkName) ? "" : " - " + pc.name) + " - " + pc.os);
 
         if (pc.isOnline) {
             holder.statusIndicator.setBackgroundColor(Color.GREEN);
@@ -58,9 +58,20 @@ public class ComputerAdapter extends RecyclerView.Adapter<ComputerAdapter.ViewHo
             holder.statusText.setText("OFFLINE");
             holder.statusText.setTextColor(Color.RED);
 
-            holder.itemView.setOnClickListener(null);
+            holder.itemView.setOnClickListener(v -> showWolDialog(pc));
             holder.itemView.setAlpha(0.6f);
         }
+    }
+
+    private void showWolDialog(Computer pc) {
+        new AlertDialog.Builder(context)
+                .setTitle("Wake " + pc.networkName)
+                .setMessage("Do you want to send a Wake-on-LAN packet to this computer?")
+                .setPositiveButton("Wake Up", (dialog, which) -> {
+                    ((MainActivity) context).sendWakeOnLan(pc);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void showCommandDialog(Computer pc) {
