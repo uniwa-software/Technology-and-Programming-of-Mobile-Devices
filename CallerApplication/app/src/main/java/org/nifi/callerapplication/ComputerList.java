@@ -6,11 +6,9 @@ import java.util.List;
 public class ComputerList {
     public static List<Computer> getPredefinedComputers() {
         List<Computer> computers = new ArrayList<>();
-        
-        // Test computer
-        computers.add(new Computer("10.11.21.29", "ON0005", "80:6D:97:5C:2D:25", false));
-        
-        // Lab computers
+
+        computers.add(new Computer("192.168.88.63", "ON0005", "80:6D:97:5C:2D:25", false));
+
         computers.add(new Computer("192.168.88.2", "PRPC01", "50:81:40:2B:91:8D", false));
         computers.add(new Computer("192.168.88.3", "PRPC02", "50:81:40:2B:7C:78", false));
         computers.add(new Computer("192.168.88.4", "PRPC03", "50:81:40:2B:78:DD", false));

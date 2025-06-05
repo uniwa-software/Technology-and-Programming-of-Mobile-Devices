@@ -23,16 +23,27 @@ public class WolUtil {
                 System.arraycopy(macBytes, 0, bytes, i, macBytes.length);
             }
 
-            InetAddress address = InetAddress.getByName(ipAddress);
+            String broadcastAddress = getBroadcastAddress(ipAddress);
+
+            InetAddress address = InetAddress.getByName(broadcastAddress);
             DatagramPacket packet = new DatagramPacket(bytes, bytes.length, address, PORT);
             DatagramSocket socket = new DatagramSocket();
+            socket.setBroadcast(true);
             socket.send(packet);
             socket.close();
 
-            Log.d("WolUtil", "Sent WOL packet to " + macAddress);
+            Log.d("WolUtil", "Sent WOL packet to " + macAddress + " via broadcast " + broadcastAddress);
         } catch (Exception e) {
             Log.e("WolUtil", "Failed to send WOL packet: " + e.getMessage());
         }
+    }
+
+    private static String getBroadcastAddress(String ipAddress) {
+        String[] parts = ipAddress.split("\\.");
+        if (parts.length == 4) {
+            return parts[0] + "." + parts[1] + "." + parts[2] + ".255";
+        }
+        return "255.255.255.255";
     }
 
     private static byte[] getMacBytes(String macAddress) throws IllegalArgumentException {
@@ -50,4 +61,4 @@ public class WolUtil {
         }
         return bytes;
     }
-} 
+}
